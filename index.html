@@ -845,6 +845,12 @@ async function fetchWithTimeout(url, opts) {
 }
 
 const CACHE_KEY = "sop-dash-cache-v1";
+function payloadUsable(v) {
+  return !!(v && typeof v === "object" && !Array.isArray(v) && (
+    Array.isArray(v.workflows) || v.summary || v.sheets || Array.isArray(v.health) ||
+    (v.data && typeof v.data === "object" && !Array.isArray(v.data) && (v.data.summary || v.data.sheets))
+  ));
+}
 const cache = {
   load() {
     try {
@@ -1246,6 +1252,7 @@ async function fetchStatus() {
       if (json[n] == null && json.data && json.data[n] != null) json[n] = json.data[n];
       if (json[n] == null && json.data && json.data.sheets && json.data.sheets[n] != null) json[n] = json.data.sheets[n];
     });
+    if (!payloadUsable(json)) throw new Error("Empty webhook response");
     const prevTab = state.activeTab;
     const prevScroll = $("#sheetTableWrap").scrollLeft;
     if (json.timestamp == null && state.data) json.timestamp = state.data.timestamp;
@@ -1265,10 +1272,15 @@ async function fetchStatus() {
     // retry once after a short delay
     try {
       await new Promise(r => setTimeout(r, 1500));
-      const res = await fetch(`${STATUS_URL}?${body}`, { method: "GET", headers: { "X-Dashboard-Key": API_KEY } });
+      const res = await fetchWithTimeout(`${STATUS_URL}?${body}`, { method: "GET", headers: { "X-Dashboard-Key": API_KEY } });
       if (!res.ok) throw new Error("HTTP " + res.status);
       const json = await res.json().catch(() => null) || {};
-      SHEET_NAMES.forEach(n => { if (json[n] == null && json.data && json.data[n] != null) json[n] = json.data[n]; });
+      SHEET_NAMES.forEach(n => {
+        if (json[n] == null && json.sheets && json.sheets[n] != null) json[n] = json.sheets[n];
+        if (json[n] == null && json.data && json.data[n] != null) json[n] = json.data[n];
+        if (json[n] == null && json.data && json.data.sheets && json.data.sheets[n] != null) json[n] = json.data.sheets[n];
+      });
+      if (!payloadUsable(json)) throw new Error("Empty webhook response");
       if (json.timestamp == null && state.data) json.timestamp = state.data.timestamp;
       state.data = json;
       state.lastKnown = json;
