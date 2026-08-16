@@ -1414,6 +1414,8 @@ function init() {
 }
 
 document.addEventListener("DOMContentLoaded", init);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshManual(); });
+window.addEventListener("pageshow", (e) => { if (e.persisted) refreshManual(); });
 </script>
 </body>
 </html>
