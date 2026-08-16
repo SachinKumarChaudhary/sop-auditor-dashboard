@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SOP Auditor — Compliance &amp; Workflow Operations</title>
+<style>
+  :root {
+    --bg:      oklch(98% 0.006 90);
+    --surface: oklch(100% 0 0);
+    --surface-2: oklch(97% 0.006 90);
+    --fg:      oklch(20% 0.012 250);
+    --muted:   oklch(52% 0.015 250);
+    --faint:   oklch(64% 0.012 250);
+    --border:  oklch(91% 0.012 90);
+    --border-strong: oklch(86% 0.012 90);
+
+    --accent:     oklch(50% 0.11 156);
+    --accent-fg:  oklch(100% 0 0);
+    --accent-ink: oklch(40% 0.11 156);
+    --accent-soft:oklch(94% 0.045 156);
+    --accent-soft-2: oklch(90% 0.05 156);
+
+    --success: oklch(52% 0.13 154);
+    --success-soft: oklch(94% 0.045 154);
+    --warn:    oklch(68% 0.14 72);
+    --warn-soft: oklch(95% 0.04 84);
+    --danger:  oklch(55% 0.2 26);
+    --danger-soft: oklch(95% 0.03 26);
+    --amber:   oklch(70% 0.16 75);
+    --amber-soft: oklch(95% 0.05 85);
+    --neutral: oklch(60% 0.012 250);
+    --neutral-soft: oklch(95% 0.006 250);
+
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+
+    --shadow-card: 0 1px 2px oklch(20% 0.01 250 / 0.04), 0 8px 24px oklch(20% 0.01 250 / 0.05);
+    --shadow-lift: 0 2px 4px oklch(20% 0.01 250 / 0.05), 0 16px 36px oklch(20% 0.01 250 / 0.09);
+    --shadow-float: 0 6px 20px oklch(20% 0.01 250 / 0.12);
+
+    --sidebar-w: 252px;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; }
+  body {
+    font-family: var(--font);
+    color: var(--fg);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    line-height: 1.5;
+  }
+
+  ::selection { background: var(--accent-soft-2); }
+
+  button { font-family: inherit; cursor: pointer; }
+  svg { display: block; }
+
+  .app {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) 1fr;
+    min-height: 100vh;
+  }
+
+  /* ============ SIDEBAR ============ */
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 14px 18px;
+    z-index: 40;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 4px 10px 18px;
+  }
+  .brand-mark {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    background: var(--accent);
+    color: var(--accent-fg);
+    display: grid; place-items: center;
+    box-shadow: var(--shadow-card);
+  }
+  .brand-name { font-weight: 650; font-size: 15.5px; letter-spacing: -0.01em; }
+  .brand-sub { font-size: 11px; color: var(--muted); letter-spacing: 0.02em; margin-top: 1px; }
+
+  .nav-section { margin-top: 16px; }
+  .nav-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--faint);
+    padding: 0 12px 7px;
+  }
+  .nav-link {
+    display: flex; align-items: center; gap: 11px;
+    width: 100%;
+    padding: 8.5px 12px;
+    margin: 1px 0;
+    border: none; background: none;
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    font-size: 13.5px;
+    font-weight: 500;
+    text-align: left;
+    position: relative;
+    transition: background .16s ease, color .16s ease;
+  }
+  .nav-link:hover { background: var(--surface-2); color: var(--fg); }
+  .nav-link .nico { color: var(--faint); transition: color .16s ease; }
+  .nav-link.active {
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+    font-weight: 600;
+  }
+  .nav-link.active .nico { color: var(--accent-ink); }
+  .nav-link.active::before {
+    content: "";
+    position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    width: 3px; height: 18px;
+    border-radius: 2px;
+    background: var(--accent);
+  }
+
+  .sidebar-spacer { flex: 1; }
+
+  .sys-card {
+    margin: 0 2px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 13px 14px;
+    background: var(--surface-2);
+  }
+  .sys-row { display: flex; align-items: center; gap: 8px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .dot.online { background: var(--success); box-shadow: 0 0 0 3px var(--success-soft); }
+  .dot.offline { background: var(--danger); box-shadow: 0 0 0 3px var(--danger-soft); }
+  .sys-label { font-size: 12.5px; font-weight: 600; }
+  .sys-status { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .sys-check { font-size: 10.5px; color: var(--faint); margin-top: 6px; letter-spacing: 0.01em; }
+
+  /* ============ MAIN ============ */
+  .main {
+    grid-column: 2;
+    padding: 34px 40px 48px;
+    min-width: 0;
+    max-width: 1560px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  /* Header */
+  .topbar {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    gap: 24px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+  }
+  .crumb { font-size: 12px; color: var(--muted); letter-spacing: 0.01em; margin-bottom: 8px; }
+  .crumb b { color: var(--faint); font-weight: 500; }
+  .title { font-family: var(--font-display); font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+  .subtitle { font-size: 14px; color: var(--muted); margin-top: 7px; }
+  .top-actions { display: flex; align-items: center; gap: 16px; }
+
+  .conn {
+    display: flex; align-items: center; gap: 9px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 9px 14px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+  }
+  .conn.online { color: var(--accent-ink); }
+  .conn.offline { color: var(--danger); border-color: oklch(80% 0.1 26); }
+  .conn .pulse { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .conn.offline .pulse { background: var(--danger); box-shadow: 0 0 0 3px var(--danger-soft); }
+  .conn .pulse.anim { animation: pulse 2.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{box-shadow:0 0 0 3px var(--accent-soft);} 50%{box-shadow:0 0 0 6px var(--accent-soft-2);} }
+
+  .last-check { font-size: 11.5px; color: var(--faint); letter-spacing: 0.01em; }
+
+  .icon-btn {
+    width: 40px; height: 40px;
+    display: grid; place-items: center;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 11px;
+    color: var(--muted);
+    transition: background .15s, color .15s, transform .15s, box-shadow .15s;
+  }
+  .icon-btn:hover { background: var(--surface-2); color: var(--fg); box-shadow: var(--shadow-card); }
+  .icon-btn:active { transform: translateY(1px); }
+  .icon-btn:disabled { opacity: .5; cursor: default; }
+  .icon-btn.spin svg { animation: rot .8s linear infinite; }
+  @keyframes rot { to { transform: rotate(360deg); } }
+
+  /* KPI row */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    margin-bottom: 22px;
+  }
+  .kpi {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 22px 22px 20px;
+    box-shadow: var(--shadow-card);
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+  .kpi.hero {
+    background: linear-gradient(160deg, var(--accent) 0%, oklch(45% 0.12 158) 100%);
+    border-color: transparent;
+    color: var(--accent-fg);
+  }
+  .kpi-head { display: flex; justify-content: space-between; align-items: center; }
+  .kpi-label { font-size: 12.5px; font-weight: 600; letter-spacing: 0.02em; }
+  .kpi.hero .kpi-label { color: oklch(92% 0.04 156); }
+  .kpi .kico { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; }
+  .kpi.hero .kico { background: oklch(100% 0 0 / 0.16); color: oklch(100% 0 0); }
+  .kpi:not(.hero) .kico { background: var(--accent-soft); color: var(--accent-ink); }
+  .kpi-num {
+    font-family: var(--font-display);
+    font-size: 44px; font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin: 18px 0 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .kpi.hero .kpi-num { color: oklch(100% 0 0); }
+  .kpi-sub { font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .kpi.hero .kpi-sub { color: oklch(90% 0.04 156); }
+  .kpi-sub .mini-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  /* Bento grid */
+  .bento {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 18px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    transition: transform .18s ease, box-shadow .18s ease;
+    display: flex; flex-direction: column;
+    min-width: 0;
+  }
+  .card:hover { box-shadow: var(--shadow-lift); transform: translateY(-2px); }
+
+  .card-head { padding: 20px 22px 0; }
+  .card-title { font-family: var(--font-display); font-size: 16.5px; font-weight: 650; letter-spacing: -0.01em; }
+  .card-sub { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+  .card-body { padding: 16px 22px 22px; flex: 1; min-height: 0; }
+
+  .col-7 { grid-column: span 7; }
+  .col-5 { grid-column: span 5; }
+  .col-6 { grid-column: span 6; }
+  .col-4 { grid-column: span 4; }
+  .col-12 { grid-column: span 12; }
+
+  /* Health status badge */
+  .health-badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    padding: 5px 11px; border-radius: 999px;
+  }
+  .health-badge.healthy { color: oklch(34% 0.11 154); background: var(--success-soft); }
+  .health-badge.attention { color: oklch(42% 0.1 55); background: var(--amber-soft); }
+
+  .card-title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+
+  /* ============ VIOLATIONS CHART ============ */
+  .bar-chart { display: flex; flex-direction: column; gap: 13px; }
+  .bar-row { display: grid; grid-template-columns: 96px 1fr 44px; align-items: center; gap: 12px; }
+  .bar-label { font-size: 12px; color: var(--muted); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { height: 26px; background: var(--surface-2); border-radius: 8px; overflow: hidden; }
+  .bar-fill {
+    height: 100%; border-radius: 8px;
+    background: linear-gradient(90deg, var(--accent) 0%, oklch(58% 0.13 158) 100%);
+    width: 0;
+    transition: width .9s cubic-bezier(.22,.8,.35,1);
+  }
+  .bar-fill.secondary { background: linear-gradient(90deg, oklch(78% 0.02 160), oklch(84% 0.02 160)); }
+  .bar-val { font-size: 13px; font-weight: 650; font-variant-numeric: tabular-nums; text-align: right; }
+
+  /* ============ HEALTH LIST ============ */
+  .list { display: flex; flex-direction: column; }
+  .list-row {
+    display: grid; grid-template-columns: 22px 1fr auto;
+    align-items: center; gap: 10px;
+    padding: 11px 2px;
+    border-bottom: 1px solid var(--border);
+  }
+  .list-row:last-child { border-bottom: none; }
+  .h-dot { width: 9px; height: 9px; border-radius: 50%; }
+  .h-dot.healthy { background: var(--success); }
+  .h-dot.attention { background: var(--amber); }
+  .h-dot.idle { background: var(--success); }
+  .h-name { font-size: 13.5px; font-weight: 600; }
+  .h-sub { font-size: 11.5px; color: var(--faint); }
+  .pill {
+    font-size: 10.5px; font-weight: 650; letter-spacing: 0.04em;
+    padding: 4px 9px; border-radius: 999px;
+    text-transform: uppercase;
+  }
+  .pill.healthy, .pill.idle { color: oklch(34% 0.11 154); background: var(--success-soft); }
+  .pill.attention, .pill.never { color: oklch(42% 0.1 55); background: var(--amber-soft); }
+  .pill.unavailable { color: var(--muted); background: var(--neutral-soft); }
+  .pill.healthy { background: var(--success-soft); }
+
+  /* ============ SLA ALERTS ============ */
+  .alert-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 88px 74px;
+    gap: 12px;
+    align-items: center;
+    padding: 13px 2px;
+    border-bottom: 1px solid var(--border);
+  }
+  .alert-row:last-child { border-bottom: none; }
+  .al-complaint { font-size: 13.5px; font-weight: 600; }
+  .al-rule { font-size: 12px; color: var(--muted); }
+  .al-meta-label { font-size: 10px; color: var(--faint); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
+  .al-meta-val { font-size: 12.5px; color: var(--fg); }
+  .breach { font-family: var(--font-display); font-size: 20px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .lv {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em;
+    padding: 5px 10px; border-radius: 8px; text-align: center;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+  }
+  .lv.critical { color: oklch(40% 0.16 26); background: var(--danger-soft); border-color: oklch(78% 0.14 26); }
+  .lv.high { color: oklch(46% 0.13 30); background: oklch(95% 0.03 26); border-color: oklch(80% 0.12 30); }
+  .lv.medium { color: oklch(46% 0.11 72); background: var(--amber-soft); border-color: oklch(82% 0.13 75); }
+  .lv.low { color: var(--muted); background: var(--neutral-soft); }
+  .pr-badge { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 7px; background: var(--surface-2); color: var(--muted); width: fit-content; }
+
+  /* ============ RUNS ============ */
+  .run-row {
+    display: grid; grid-template-columns: auto 1fr;
+    gap: 12px;
+    padding: 11px 2px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .run-row:last-child { border-bottom: none; }
+  .run-row.latest { background: var(--accent-soft); border-radius: 12px; padding: 12px 14px; border-bottom: none; margin-top: 2px; }
+  .run-time { font-family: var(--mono); font-size: 11.5px; color: var(--faint); font-variant-numeric: tabular-nums; padding-top: 1px; }
+  .run-main {}
+  .run-top { display: flex; align-items: center; gap: 9px; }
+  .run-status { font-size: 11px; font-weight: 650; letter-spacing: 0.04em; padding: 3px 8px; border-radius: 7px; }
+  .run-status.success { color: oklch(34% 0.11 154); background: var(--success-soft); }
+  .run-status.failed { color: oklch(40% 0.16 26); background: var(--danger-soft); }
+  .run-metas { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 5px; font-size: 11.5px; color: var(--muted); }
+  .run-metas b { color: var(--fg); font-weight: 650; font-variant-numeric: tabular-nums; }
+
+  /* ============ WORKFLOWS ============ */
+  .wf-row {
+    display: grid; grid-template-columns: auto 1fr auto;
+    align-items: center; gap: 12px;
+    padding: 12px 2px;
+    border-bottom: 1px solid var(--border);
+  }
+  .wf-row:last-child { border-bottom: none; }
+  .wf-toggle { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--border-strong); }
+  .wf-row.active .wf-toggle { border-color: var(--accent); background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .wf-name { font-size: 13.5px; font-weight: 600; }
+  .wf-name.inactive { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--border-strong); }
+  .wf-role { font-size: 11.5px; color: var(--faint); }
+  .wf-state { font-size: 11.5px; font-weight: 650; letter-spacing: 0.03em; }
+  .wf-state.active { color: oklch(34% 0.11 154); }
+  .wf-state.inactive { color: var(--faint); }
+
+  /* ============ TRELLO ============ */
+  .tr-row {
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 8px 14px;
+    padding: 12px 2px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tr-row:last-child { border-bottom: none; }
+  .tr-name { font-size: 13.5px; font-weight: 600; }
+  .tr-desc { font-size: 12px; color: var(--muted); margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .tr-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .tr-tag { font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; }
+  .tr-tag.overdue { color: oklch(40% 0.16 26); background: var(--danger-soft); }
+  .tr-tag.today { color: oklch(46% 0.11 72); background: var(--amber-soft); }
+  .tr-tag.upcoming { color: oklch(34% 0.11 154); background: var(--success-soft); }
+  .tr-date { font-size: 11px; color: var(--faint); }
+  .tr-id { font-size: 9.5px; color: var(--faint); font-family: var(--mono); }
+
+  /* ============ SHEETS TABS ============ */
+  .tabs {
+    display: flex; gap: 4px;
+    padding: 8px 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    padding: 10px 16px;
+    background: none; border: none;
+    font-size: 13px; font-weight: 550;
+    color: var(--muted);
+    border-radius: 10px 10px 0 0;
+    position: relative;
+    transition: color .15s, background .15s;
+  }
+  .tab:hover { color: var(--fg); background: var(--surface-2); }
+  .tab.active { color: var(--accent-ink); font-weight: 600; }
+  .tab.active::after {
+    content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px;
+    height: 2px; border-radius: 2px; background: var(--accent);
+  }
+  .tab-count { font-size: 11px; color: var(--faint); margin-left: 6px; font-variant-numeric: tabular-nums; }
+  .tab.active .tab-count { color: var(--accent-ink); }
+
+  .table-wrap { overflow: auto; max-height: 320px; border-radius: 0 0 var(--radius-md) var(--radius-md); }
+  table.sheet { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 640px; }
+  table.sheet thead th {
+    position: sticky; top: 0;
+    background: var(--surface-2);
+    text-align: left;
+    font-size: 10.5px; font-weight: 650; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--faint);
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    z-index: 2;
+  }
+  table.sheet tbody td { padding: 9px 16px; border-bottom: 1px solid var(--border); white-space: nowrap; color: var(--fg); }
+  table.sheet tbody tr:hover td { background: var(--surface-2); }
+  table.sheet tbody tr:last-child td { border-bottom: none; }
+
+  .sheet-head { padding: 18px 22px 6px; display: flex; justify-content: space-between; align-items: center; }
+
+  /* ============ CONTROLS ============ */
+  .controls-body { padding: 20px 22px 24px; }
+  .ctrl-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .ctrl-btn {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 9px;
+    padding: 16px 16px 15px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    text-align: left;
+    transition: box-shadow .16s, transform .16s, background .16s, border-color .16s;
+  }
+  .ctrl-btn:hover { box-shadow: var(--shadow-card); transform: translateY(-2px); border-color: var(--border-strong); }
+  .ctrl-btn:active { transform: translateY(0); }
+  .ctrl-btn:disabled { opacity: .55; cursor: default; transform: none; }
+  .ctrl-btn.primary-btn {
+    background: var(--accent); border-color: transparent; color: var(--accent-fg);
+  }
+  .ctrl-btn.primary-btn:hover { background: oklch(44% 0.11 158); }
+  .ctrl-icon { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; }
+  .ctrl-btn.primary-btn .ctrl-icon { background: oklch(100% 0 0 / 0.16); color: var(--accent-fg); }
+  .ctrl-btn:not(.primary-btn) .ctrl-icon { background: var(--surface-2); color: var(--muted); }
+  .ctrl-btn.backup-btn .ctrl-icon { color: var(--faint); }
+  .ctrl-name { font-size: 13.5px; font-weight: 650; }
+  .ctrl-btn.primary-btn .ctrl-name { color: var(--accent-fg); }
+  .ctrl-desc { font-size: 11px; color: var(--muted); }
+  .ctrl-btn.primary-btn .ctrl-desc { color: oklch(90% 0.04 156); }
+  .ctrl-btn.loading .ctrl-name::after { content: "…"; }
+
+  /* ============ STATES ============ */
+  .state {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; padding: 34px 20px; text-align: center; color: var(--muted); font-size: 13px;
+  }
+  .state .state-icon { color: var(--faint); opacity: .7; }
+  .state-title { font-weight: 600; color: var(--fg); }
+  .state-sub { font-size: 12px; color: var(--faint); }
+  .error-state { color: oklch(45% 0.14 26); }
+
+  /* Skeleton */
+  .skel { background: linear-gradient(100deg, var(--surface-2) 40%, oklch(94% 0.008 90) 50%, var(--surface-2) 60%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 7px; }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+  .skel-block { height: 16px; margin: 12px 2px; }
+  .skel-line { height: 26px; margin: 8px 2px; margin-top: 14px; }
+  .skel-bar { height: 26px; border-radius: 8px; margin: 12px 0; }
+
+  /* Toast */
+  .toasts { position: fixed; top: 22px; right: 22px; z-index: 100; display: flex; flex-direction: column; gap: 10px; }
+  .toast {
+    display: flex; align-items: center; gap: 11px;
+    background: var(--surface); color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    padding: 13px 16px;
+    box-shadow: var(--shadow-float);
+    font-size: 13.5px; font-weight: 550;
+    min-width: 260px; max-width: 380px;
+    animation: toast-in .3s cubic-bezier(.22,.8,.35,1);
+  }
+  .toast.out { animation: toast-out .3s forwards; }
+  @keyframes toast-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+  @keyframes toast-out { to { opacity: 0; transform: translateY(-8px); } }
+  .toast .t-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .toast.success .t-dot { background: var(--success); }
+  .toast.error .t-dot { background: var(--danger); }
+  .toast.info .t-dot { background: var(--accent); }
+  .toast.ok .t-dot { background: var(--success); }
+
+  /* Modal */
+  .modal-back {
+    position: fixed; inset: 0; background: oklch(20% 0.01 250 / 0.4);
+    display: none; align-items: center; justify-content: center; z-index: 90;
+  }
+  .modal-back.open { display: flex; animation: fade .2s; }
+  @keyframes fade { from { opacity: 0; } }
+  .modal {
+    background: var(--surface); border-radius: var(--radius-lg);
+    width: 400px; max-width: calc(100vw - 40px);
+    padding: 24px; box-shadow: var(--shadow-float);
+  }
+  .modal h3 { font-size: 17px; font-weight: 650; letter-spacing: -0.01em; margin-bottom: 8px; }
+  .modal p { font-size: 13.5px; color: var(--muted); line-height: 1.55; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+  .btn {
+    padding: 9px 18px; border-radius: 10px; font-size: 13.5px; font-weight: 600;
+    border: 1px solid var(--border); background: var(--surface); color: var(--fg);
+    transition: background .15s, box-shadow .15s;
+  }
+  .btn:hover { background: var(--surface-2); box-shadow: var(--shadow-card); }
+  .btn.primary { background: var(--accent); border-color: transparent; color: var(--accent-fg); }
+  .btn.primary:hover { background: oklch(44% 0.11 158); }
+
+  /* focus */
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
+  /* ============ RESPONSIVE ============ */
+  .mobile-backdrop { display: none; }
+  .menu-toggle { display: none; }
+
+  @media (max-width: 1200px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .col-7, .col-5 { grid-column: span 6; }
+    .ctrl-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 900px) {
+    .menu-toggle { display: grid; }
+    .sidebar {
+      transform: translateX(-100%);
+      transition: transform .28s ease;
+    }
+    .sidebar.open { transform: translateX(0); box-shadow: var(--shadow-float); }
+    .mobile-backdrop {
+      position: fixed; inset: 0; background: oklch(20% 0.01 250 / 0.35);
+      z-index: 30; display: none;
+    }
+    .mobile-backdrop.open { display: block; }
+    .app { grid-template-columns: 1fr; }
+    .main { grid-column: 1; padding: 24px 18px 40px; }
+  }
+  @media (max-width: 640px) {
+    .kpi-row { grid-template-columns: 1fr; }
+    .col-7, .col-6, .col-5, .col-4 { grid-column: span 12; }
+    .ctrl-grid { grid-template-columns: 1fr; }
+    .alert-row { grid-template-columns: 1fr 1fr; }
+    .bento { gap: 14px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ================= SIDEBAR ================= -->
+  <div class="mobile-backdrop" id="mobileBackdrop"></div>
+  <aside class="sidebar" id="sidebar" data-od-id="sidebar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 1.2 2.2-.2.7 2.1 1.8 1.3-.7 2.1.7 2.1-1.8 1.3-.7 2.1-2.2-.2L12 16l-1.8-1.2-2.2.2-.7-2.1L5.5 11.6l.7-2.1-.7-2.1 1.8-1.3.7-2.1 2.2.2z"/><path d="M8 12l2.5 2.5L16 9"/></svg>
+      </div>
+      <div>
+        <div class="brand-name">SOP Auditor</div>
+        <div class="brand-sub">Compliance Suite</div>
+      </div>
+    </div>
+
+    <nav aria-label="Primary">
+      <div class="nav-section">
+        <div class="nav-label">Overview</div>
+        <button class="nav-link active" data-od-id="nav-dashboard"><span class="nico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>Dashboard</button>
+        <button class="nav-link"><span class="nico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 4v5c0 4.4-3 7.9-7 9-4-1.1-7-4.6-7-9V7z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg></span>Violations</button>
+        <button class="nav-link"><span class="nico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></svg></span>SLA Alerts</button>
+        <button class="nav-link"><span class="nico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg></span>Workflow Health</button>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Operations</div>
+        <button class="nav-link"><span class="nico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>Audit Results</button>
+        <button class="nav-link"><span class="nico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l3 3-3 3-3-3z"/><path d="M12 13l3 3-3 3-3-3z"/><circle cx="12" cy="9" r="2"/><circle cx="12" cy="18" r="2"/></svg></span>Exceptions</button>
+        <button class="nav-link"><span class="nico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 3h16v18H4z"/><path d="M4 11h16"/><path d="M8 7h8"/></svg></span>Run Ledger</button>
+        <button class="nav-link"><span class="nico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><path d="M7 14v7M17 14v7"/></svg></span>Trello Queue</button>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">System</div>
+        <button class="nav-link"><span class="nico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg></span>Settings</button>
+        <button class="nav-link"><span class="nico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2L3 14h9l-1 8 10-12h-9z"/></svg></span>System Status</button>
+      </div>
+    </nav>
+
+    <div class="sidebar-spacer"></div>
+    <div class="sys-card" data-od-id="sidebar-status">
+      <div class="sys-row">
+        <span class="dot online" id="sysDot"></span>
+        <span>
+          <div class="sys-label">System Status</div>
+          <div class="sys-status" id="sysStatus">Checking…</div>
+        </span>
+      </div>
+      <div class="sys-check" id="sysCheck">Last API check: —</div>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <main class="main" id="main">
+    <header class="topbar" data-od-id="topbar">
+      <div>
+        <div class="crumb">Operations <b>/</b> Dashboard</div>
+        <h1 class="title">SOP Auditor</h1>
+        <div class="subtitle">Compliance monitoring, workflow health &amp; SLA operations</div>
+      </div>
+      <div class="top-actions">
+        <div class="conn" id="connPill" data-od-id="conn-pill">
+          <span class="pulse" id="connPulse"></span>
+          <span id="connText">SYSTEM ONLINE</span>
+        </div>
+        <span class="last-check" id="topLastCheck">—</span>
+        <button class="icon-btn menu-toggle" id="menuToggle" aria-label="Toggle menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+        <button class="icon-btn" id="refreshBtn" data-od-id="refresh-btn" aria-label="Refresh" title="Refresh">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- KPI ROW -->
+    <section class="kpi-row" data-od-id="kpi-row">
+      <div class="kpi hero" data-od-id="kpi-violations">
+        <div class="kpi-head">
+          <span class="kpi-label">Total Violations</span>
+          <span class="kico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V6M16 20v-8M22 20H2"/></svg></span>
+        </div>
+        <div class="kpi-num" id="kpiViolations">—</div>
+        <div class="kpi-sub"><span class="mini-dot" style="background:currentColor"></span> across all rules</div>
+      </div>
+      <div class="kpi" data-od-id="kpi-critical">
+        <div class="kpi-head"><span class="kpi-label">Critical</span>
+          <span class="kico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16v.5"/></svg></span>
+        </div>
+        <div class="kpi-num" id="kpiCritical">—</div>
+        <div class="kpi-sub"><span class="mini-dot" style="background:var(--danger)"></span> highest severity</div>
+      </div>
+      <div class="kpi" data-od-id="kpi-alerts">
+        <div class="kpi-head"><span class="kpi-label">Open Alerts</span>
+          <span class="kico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></svg></span>
+        </div>
+        <div class="kpi-num" id="kpiAlerts">—</div>
+        <div class="kpi-sub"><span class="mini-dot" style="background:var(--warn)"></span> requiring attention</div>
+      </div>
+      <div class="kpi" data-od-id="kpi-exceptions">
+        <div class="kpi-head"><span class="kpi-label">Exceptions</span>
+          <span class="kico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 3-3 3-3-3z"/><path d="M12 13l3 3-3 3-3-3z"/><circle cx="12" cy="9" r="2"/><circle cx="12" cy="18" r="2"/></svg></span>
+        </div>
+        <div class="kpi-num" id="kpiExceptions">—</div>
+        <div class="kpi-sub"><span class="mini-dot" style="background:var(--accent)"></span> flagged records</div>
+      </div>
+    </section>
+
+    <!-- BENTO GRID -->
+    <section class="bento" data-od-id="bento">
+
+      <!-- CARD 1: VIOLATIONS BY RULE (large) -->
+      <article class="card col-7" data-od-id="card-violations-by-rule">
+        <div class="card-head">
+          <div class="card-title">Violations by Rule</div>
+          <div class="card-sub">Where compliance breaches are concentrated</div>
+        </div>
+        <div class="card-body">
+          <div class="bar-chart" id="violationsChart"></div>
+        </div>
+      </article>
+
+      <!-- CARD 2: WORKFLOW HEALTH (medium) -->
+      <article class="card col-5" data-od-id="card-workflow-health">
+        <div class="card-head">
+          <div class="card-title-row">
+            <div>
+              <div class="card-title">Workflow Health</div>
+              <div class="card-sub">Automation &amp; pipeline status</div>
+            </div>
+            <span class="health-badge" id="healthBadge">—</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="list" id="healthList"></div>
+        </div>
+      </article>
+
+      <!-- CARD 3: SLA ALERTS (large / important) -->
+      <article class="card col-7" data-od-id="card-sla-alerts">
+        <div class="card-head">
+          <div class="card-title">SLA Alerts</div>
+          <div class="card-sub">Priority breaches ranked by risk</div>
+        </div>
+        <div class="card-body">
+          <div id="alertList"></div>
+        </div>
+      </article>
+
+      <!-- CARD 4: RECENT RUNS (medium) -->
+      <article class="card col-5" data-od-id="card-recent-runs">
+        <div class="card-head">
+          <div class="card-title">Recent Runs</div>
+          <div class="card-sub">Latest automation execution ledger</div>
+        </div>
+        <div class="card-body">
+          <div id="runsList"></div>
+        </div>
+      </article>
+
+      <!-- CARD 5: AUTOMATION WORKFLOWS -->
+      <article class="card col-6" data-od-id="card-automation-workflows">
+        <div class="card-head">
+          <div class="card-title">Automation Workflows</div>
+          <div class="card-sub">Registered workflows and roles</div>
+        </div>
+        <div class="card-body">
+          <div class="list" id="workflowList"></div>
+        </div>
+      </article>
+
+      <!-- CARD 6: TRELLO QUEUE -->
+      <article class="card col-6" data-od-id="card-trello-queue">
+        <div class="card-head">
+          <div class="card-title">Trello Queue</div>
+          <div class="card-sub">Cards awaiting operations</div>
+        </div>
+        <div class="card-body">
+          <div id="trelloList"></div>
+        </div>
+      </article>
+
+      <!-- CARD 7: SHEET DATA (wide) -->
+      <article class="card col-12" data-od-id="card-sheet-data">
+        <div class="tabs" id="sheetTabs" role="tablist"></div>
+        <div class="sheet-head">
+          <div class="card-sub" id="sheetCount"></div>
+        </div>
+        <div class="table-wrap" id="sheetTableWrap">
+          <div id="sheetTable"></div>
+        </div>
+      </article>
+
+      <!-- CARD 8: WORKFLOW CONTROLS (wide) -->
+      <article class="card col-12" data-od-id="card-workflow-controls">
+        <div class="card-head">
+          <div class="card-title">Workflow Controls</div>
+          <div class="card-sub">Trigger automation actions on demand</div>
+        </div>
+        <div class="controls-body">
+          <div class="ctrl-grid" id="ctrlGrid">
+            <button class="ctrl-btn primary-btn" data-action="run" data-od-id="ctrl-run">
+              <span class="ctrl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9z"/></svg></span>
+              <span class="ctrl-name">Run Audit</span>
+              <span class="ctrl-desc">Execute full compliance sweep</span>
+            </button>
+            <button class="ctrl-btn" data-action="rehearse" data-od-id="ctrl-rehearse">
+              <span class="ctrl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10v4M10 10v4"/></svg></span>
+              <span class="ctrl-name">Rehearse</span>
+              <span class="ctrl-desc">Dry-run without applying</span>
+            </button>
+            <button class="ctrl-btn" data-action="monitor" data-od-id="ctrl-monitor">
+              <span class="ctrl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span>
+              <span class="ctrl-name">Monitor</span>
+              <span class="ctrl-desc">Watch live pipeline health</span>
+            </button>
+            <button class="ctrl-btn backup-btn" data-action="backup" data-od-id="ctrl-backup">
+              <span class="ctrl-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg></span>
+              <span class="ctrl-name">Backup</span>
+              <span class="ctrl-desc">Snapshot current state</span>
+            </button>
+          </div>
+        </div>
+      </article>
+
+    </section>
+  </main>
+</div>
+
+<!-- MODAL -->
+<div class="modal-back" id="confirmBack">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <h3 id="confirmTitle">Confirm action?</h3>
+    <p id="confirmText">This will trigger the selected operation.</p>
+    <div class="modal-actions">
+      <button class="btn" id="confirmCancel">Cancel</button>
+      <button class="btn primary" id="confirmOk">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+/* ================= CONFIG ================= */
+const API_BASE = "https://n8n-latest-y0vh.onrender.com/webhook";
+const STATUS_URL = `${API_BASE}/dash-status`;
+const ACTION_URL = `${API_BASE}/dash-action`;
+const API_KEY = "sop-dash-2026";
+const POLL_MS = 30000;
+const RECOVERY_MS = 8000;
+const FETCH_TIMEOUT_MS = 25000;
+
+async function fetchWithTimeout(url, opts) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  try { return await fetch(url, { ...opts, signal: ctrl.signal }); }
+  finally { clearTimeout(t); }
+}
+
+const CACHE_KEY = "sop-dash-cache-v1";
+const cache = {
+  load() {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      const p = JSON.parse(raw);
+      if (p && p.data && typeof p.data === "object") return p;
+    } catch (e) {}
+    return null;
+  },
+  save(data) {
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data, savedAt: Date.now() })); } catch (e) {}
+  },
+};
+
+/* ================= STATE ================= */
+const state = {
+  data: null,
+  connected: false,
+  online: true,
+  inFlight: false,
+  activeTab: null,
+  loading: true,
+  lastKnown: null,   // last successful source of truth
+  cachedAt: null,    // timestamp of the localStorage snapshot being shown
+  sheetData: {},     // {sheetName: {rows}}
+  sheetRows: {},
+};
+
+/* ================= HELPERS ================= */
+const $ = (s, r) => (r || document).querySelector(s);
+const el = (tag, cls, html) => { const n = document.createElement(tag); if (cls) n.className = cls; if (html !== undefined) n.innerHTML = html; return n; };
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+}
+
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const fmtTime = (t) => {
+  if (!t || t === "-") return "Unavailable";
+  const d = new Date(t);
+  if (isNaN(d)) return String(t);
+  return d.toLocaleString([], { month:"short", day:"numeric", hour:"2-digit", minute:"2-digit" });
+};
+
+/* ================= TOASTS ================= */
+function toast(msg, type = "info") {
+  const t = el("div", `toast ${type}`);
+  const dot = el("span", "t-dot");
+  t.appendChild(dot);
+  t.appendChild(document.createTextNode(msg));
+  $("#toasts").appendChild(t);
+  setTimeout(() => { t.classList.add("out"); setTimeout(() => t.remove(), 320); }, 3600);
+}
+
+/* ================= SKELETONS ================= */
+const skelBars = () => {
+  const wrap = el("div");
+  for (let i = 0; i < 5; i++) wrap.appendChild(el("div", "skel-bar"));
+  return wrap;
+};
+const skelRows = () => {
+  const wrap = el("div");
+  for (let i = 0; i < 5; i++) wrap.appendChild(el("div", "skel-block"));
+  return wrap;
+};
+
+/* ================= STATE HELPERS ================= */
+function stateBlock(title, sub) {
+  const d = el("div", "state");
+  d.appendChild(el("div", "state-icon", '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></svg>'));
+  if (title) d.appendChild(el("div", "state-title", esc(title)));
+  if (sub) d.appendChild(el("div", "state-sub", esc(sub)));
+  return d;
+}
+const emptyState = (t, s) => stateBlock(t, s);
+const errorState = (t) => { const d = stateBlock(t || "Unable to load data"); d.classList.add("error-state"); return d; };
+
+/* ================= RENDER: KPI ================= */
+function renderKpi() {
+  const s = state.data && state.data.summary;
+  const set = (id, v) => { const n = $(id); if (n) n.textContent = v == null ? "—" : String(v); };
+  set("#kpiViolations", s && s.totalViolations);
+  set("#kpiCritical", s && s.critical);
+  set("#kpiAlerts", s && s.openAlerts);
+  set("#kpiExceptions", s && s.exceptions);
+}
+
+/* ================= RENDER: VIOLATIONS CHART ================= */
+function renderViolations() {
+  const host = $("#violationsChart");
+  host.innerHTML = "";
+  if (state.loading && !state.data) { host.appendChild(skelBars()); return; }
+  const byRule = state.data && state.data.summary && state.data.summary.byRule;
+  let rows;
+  if (Array.isArray(byRule)) rows = byRule;
+  else if (byRule && typeof byRule === "object") {
+    rows = Object.entries(byRule).map(([id, count]) => ({ id, count }));
+  } else if (byRule && Array.isArray(byRule.entries)) {
+    rows = byRule.entries;
+  } else rows = null;
+
+  if (!rows || rows.length === 0) { host.appendChild(emptyState("No violations recorded", "Nothing to show yet")); return; }
+
+  const top = rows.slice().sort((a, b) => (num(b.count) - num(a.count)) || 0);
+  const max = Math.max(...top.map(r => num(r.count)), 1);
+  const shown = top.slice(0, 6);
+
+  shown.forEach((r, i) => {
+    const row = el("div", "bar-row");
+    const label = el("div", "bar-label", esc(r.id || r.ruleId || r.name || `Rule ${i+1}`));
+    const track = el("div", "bar-track");
+    const fill = el("div", "bar-fill" + (i === 0 ? "" : " secondary"));
+    fill.style.width = "0%";
+    track.appendChild(fill);
+    const val = el("div", "bar-val", String(num(r.count)));
+    row.appendChild(label); row.appendChild(track); row.appendChild(val);
+    host.appendChild(row);
+    requestAnimationFrame(() => requestAnimationFrame(() => { fill.style.width = Math.max((num(r.count) / max) * 100, 3) + "%"; }));
+  });
+}
+
+/* ================= RENDER: WORKFLOW HEALTH ================= */
+function nl(status) { return String(status || "").toLowerCase(); }
+function healthOf(status) {
+  const s = nl(status);
+  if (s === "idle") return { cls: "healthy", label: "Healthy" };
+  if (s === "never") return { cls: "attention", label: "Attention" };
+  return { cls: "unavailable", label: "Unavailable" };
+}
+function renderHealth() {
+  const host = $("#healthList"); host.innerHTML = "";
+  const badge = $("#healthBadge");
+  if (state.loading && !state.data) { host.appendChild(skelRows()); badge.textContent = "—"; badge.className = "health-badge"; return; }
+  const health = state.data && state.data.health;
+  if (!Array.isArray(health) || health.length === 0) {
+    host.appendChild(emptyState("No workflows", "No health data available"));
+    badge.textContent = "—"; badge.className = "health-badge"; return;
+  }
+  const anyAttention = health.some(h => nl(h.status) === "never");
+  const anyUnavailable = health.some(h => !h.lastRun || h.lastRun === "-" || (!nl(h.status) && !h.status));
+  badge.textContent = anyAttention ? "ATTENTION" : "HEALTHY";
+  badge.className = "health-badge " + (anyAttention ? "attention" : "healthy");
+
+  health.forEach(h => {
+    const name = h.label || h.workflow || h.name || "Workflow";
+    const st = h.status;
+    let cell;
+    if (!h.lastRun || h.lastRun === "-") {
+      cell = { cls: "unavailable", label: "Unavailable" };
+    } else {
+      cell = healthOf(st);
+    }
+    const row = el("div", "list-row");
+    row.appendChild(el("div", `h-dot ${cell.cls}`));
+    const mid = el("div");
+    mid.appendChild(el("div", "h-name", esc(name)));
+    if (h.lastRun && h.lastRun !== "-") mid.appendChild(el("div", "h-sub", `Last run · ${fmtTime(h.lastRun)}`));
+    else mid.appendChild(el("div", "h-sub", "Never executed"));
+    row.appendChild(mid);
+    row.appendChild(el("span", `pill ${cell.cls}`, esc(cell.label)));
+    host.appendChild(row);
+  });
+}
+
+/* ================= RENDER: SLA ALERTS ================= */
+const LV_RANK = { critical: 0, high: 1, medium: 2, low: 3 };
+function renderAlerts() {
+  const host = $("#alertList"); host.innerHTML = "";
+  if (state.loading && !state.data) { for (let i=0;i<4;i++) host.appendChild(el("div","skel-block")); return; }
+  const alerts = state.data && state.data.alerts;
+  if (!Array.isArray(alerts) || alerts.length === 0) {
+    host.appendChild(emptyState("No active SLA alerts", "All SLAs within target"));
+    return;
+  }
+  const list = alerts.slice().sort((a, b) => {
+    const la = LV_RANK[nl(a.level)] ?? 9, lb = LV_RANK[nl(b.level)] ?? 9;
+    if (la !== lb) return la - lb;
+    return num(b.breach || b.breachPct || b.pct) - num(a.breach || a.breachPct || a.pct);
+  });
+
+  list.forEach(a => {
+    const level = nl(a.level);
+    const lvCls = ["critical","high","medium","low"].includes(level) ? level : "low";
+    const breach = a.breach != null ? a.breach : (a.breachPct != null ? a.breachPct : (a.pct != null ? a.pct : a["breach %"]));
+    const row = el("div", "alert-row");
+    const c = el("div");
+    c.appendChild(el("div", "al-complaint", esc(a.complaint || a.name || "Complaint")));
+    if (a.rule) c.appendChild(el("div", "al-rule", `Rule · ${esc(a.rule)}`));
+    row.appendChild(c);
+    const d = el("div");
+    d.appendChild(el("div", "al-meta-label", "Department"));
+    d.appendChild(el("div", "al-meta-val", esc(a.department || "—")));
+    row.appendChild(d);
+    const pr = el("div", "pr-badge", esc(a.priority || a.priorityLabel || "—"));
+    row.appendChild(pr);
+    const b = el("div", "breach", esc(breach != null ? breach + "%" : "—"));
+    row.appendChild(b);
+    row.appendChild(el("span", `lv ${lvCls}`, esc(level.toUpperCase())));
+    host.appendChild(row);
+  });
+}
+
+/* ================= RENDER: RECENT RUNS ================= */
+function renderRuns() {
+  const host = $("#runsList"); host.innerHTML = "";
+  if (state.loading && !state.data) { for (let i=0;i<4;i++) host.appendChild(el("div","skel-block")); return; }
+  const ledger = state.data && state.data.n8n && state.data.n8n.runLedger;
+  const runs = (Array.isArray(ledger) ? ledger : null) || (Array.isArray(state.data && state.data.runLedger) ? state.data.runLedger : null);
+  if (!runs || runs.length === 0) {
+    host.appendChild(emptyState("No workflow runs yet", "Runs will appear here"));
+    return;
+  }
+  const sorted = runs.slice().sort((a, b) => new Date(b.timestamp || b.time || b.runAt || b.RunTimestamp) - new Date(a.timestamp || a.time || a.runAt || a.RunTimestamp));
+
+  sorted.forEach((r, i) => {
+    const row = el("div", "run-row" + (i === 0 ? " latest" : ""));
+    const time = el("div", "run-time", esc(fmtTime(r.timestamp || r.time || r.runAt || r.startedAt || r.RunTimestamp || r.StartedAt)));
+    const main = el("div", "run-main");
+    const top = el("div", "run-top");
+    const st = nl(r.status);
+    const ok = !st || st === "success" || st === "completed" || st === "ok" || st === "healthy";
+    top.appendChild(el("span", `run-status ${ok ? "success" : "failed"}`, esc(ok ? "Success" : "Failed")));
+    if (r.name || r.workflow) top.appendChild(el("span", "al-rule", esc(r.name || r.workflow)));
+    main.appendChild(top);
+    const metas = el("div", "run-metas");
+    const addMeta = (label, val) => { if (val != null) { const s = el("span"); s.appendChild(document.createTextNode(label + " ")); const b = el("b", "", esc(val)); s.appendChild(b); metas.appendChild(s); } };
+    addMeta("Audited", r.RecordsAudited ?? r.recordsAudited ?? r.records ?? r.audited);
+    addMeta("Violations", r.Violations ?? r.violations ?? r.violationCount);
+    addMeta("Exceptions", r.Exceptions ?? r.exceptions);
+    main.appendChild(metas);
+    row.appendChild(time); row.appendChild(main);
+    host.appendChild(row);
+  });
+}
+
+/* ================= RENDER: WORKFLOWS ================= */
+function renderWorkflows() {
+  const host = $("#workflowList"); host.innerHTML = "";
+  if (state.loading && !state.data) { host.appendChild(skelRows()); return; }
+  const wf = state.data && state.data.workflows;
+  if (!Array.isArray(wf) || wf.length === 0) {
+    host.appendChild(emptyState("No workflows", "No automation workflows registered"));
+    return;
+  }
+  wf.forEach(w => {
+    const active = !(w.active === false || w.active === 0 || String(w.active).toLowerCase() === "inactive" || String(w.active).toLowerCase() === "false");
+    const row = el("div", "wf-row" + (active ? " active" : ""));
+    row.appendChild(el("div", "wf-toggle"));
+    const mid = el("div");
+    mid.appendChild(el("div", "wf-name" + (active ? "" : " inactive"), esc(w.name || w.title || "Workflow")));
+    if (w.role) mid.appendChild(el("div", "wf-role", esc(w.role)));
+    row.appendChild(mid);
+    row.appendChild(el("span", `wf-state ${active ? "active" : "inactive"}`, active ? "● Active" : "○ Inactive"));
+    host.appendChild(row);
+  });
+}
+
+/* ================= RENDER: TRELLO ================= */
+function renderTrello() {
+  const host = $("#trelloList"); host.innerHTML = "";
+  if (state.loading && !state.data) { for (let i=0;i<4;i++) host.appendChild(el("div","skel-block")); return; }
+  const tre = state.data && state.data.trello;
+  if (!Array.isArray(tre) || tre.length === 0) {
+    host.appendChild(emptyState("Queue empty", "No Trello cards pending"));
+    return;
+  }
+  const now = Date.now();
+  tre.forEach(t => {
+    const due = t.due || t.dueDate || t.date;
+    let tag = null, hasDue = due && due !== "-";
+    if (hasDue) {
+      const d = new Date(due);
+      if (!isNaN(d)) {
+        const diff = d - now;
+        if (diff < 0) tag = { cls: "overdue", label: "Overdue" };
+        else if (diff < 86400000) tag = { cls: "today", label: "Due today" };
+        else tag = { cls: "upcoming", label: "Upcoming" };
+      }
+    }
+    const row = el("div", "tr-row");
+    const l = el("div");
+    l.appendChild(el("div", "tr-name", esc(t.name || t.title || "Card")));
+    if (t.desc || t.description) l.appendChild(el("div", "tr-desc", esc(t.desc || t.description)));
+    row.appendChild(l);
+    const r = el("div", "tr-right");
+    if (tag) r.appendChild(el("span", `tr-tag ${tag.cls}`, tag.label));
+    if (hasDue) r.appendChild(el("div", "tr-date", esc(fmtTime(due))));
+    if (t.idList) r.appendChild(el("div", "tr-id", `list · ${esc(String(t.idList).slice(0, 10))}`));
+    if (!hasDue) r.appendChild(el("div", "tr-date", "No due date"));
+    row.appendChild(r);
+    host.appendChild(row);
+  });
+}
+
+/* ================= SHEETS ================= */
+const SHEET_NAMES = ["Audit_Results", "Exceptions", "Audit_Summary", "Operational_Data"];
+const SHEET_LABELS = ["Audit Results", "Exceptions", "Audit Summary", "Operational Data"];
+function currentSheet() {
+  if (state.activeTab) return state.activeTab;
+  const raw = state.data || {};
+  for (const n of SHEET_NAMES) {
+    const v = raw[n];
+    if (Array.isArray(v) || (v && (Array.isArray(v.rows) || Array.isArray(v.data) || typeof v === "object"))) return n;
+  }
+  return SHEET_NAMES[0];
+}
+function extractRows(name) {
+  const raw = state.data ? state.data[name] : null;
+  if (Array.isArray(raw)) return raw;
+  if (raw && Array.isArray(raw.rows)) return raw.rows;
+  if (raw && Array.isArray(raw.data)) return raw.data;
+  return null;
+}
+function renderTabs() {
+  const tabsHost = $("#sheetTabs"); tabsHost.innerHTML = "";
+  const active = currentSheet();
+  SHEET_NAMES.forEach((name, i) => {
+    const btn = el("button", "tab" + (name === active ? " active" : ""));
+    btn.setAttribute("role", "tab");
+    btn.dataset.name = name;
+    const rows = state.sheetRows[name];
+    btn.innerHTML = `${esc(SHEET_LABELS[i])}${rows != null ? `<span class="tab-count">${rows}</span>` : ""}`;
+    btn.addEventListener("click", () => { state.activeTab = name; renderTabs(); renderSheet(); });
+    tabsHost.appendChild(btn);
+  });
+}
+function renderSheet() {
+  const host = $("#sheetTable"); host.innerHTML = "";
+  const countEl = $("#sheetCount");
+  const name = currentSheet();
+  const rows = extractRows(name);
+  if (rows && rows.length) {
+    state.sheetRows[name] = rows.length;
+    countEl.textContent = `${rows.length.toLocaleString()} rows`;
+  } else {
+    countEl.textContent = "";
+  }
+  if (state.loading && !state.data) { host.appendChild(el("div","skel", '<div style="height:260px"></div>')); return; }
+  if (!rows || rows.length === 0) {
+    host.appendChild(emptyState("No records", `No rows in ${name.replace(/_/g, " ")}`));
+    return;
+  }
+  const cols = Object.keys(rows[0] || {});
+  if (cols.length === 0) { host.appendChild(emptyState("No records", "Columns unavailable")); return; }
+  const table = el("table", "sheet");
+  const thead = el("thead");
+  const hr = el("tr");
+  cols.forEach(c => hr.appendChild(el("th", "", esc(c))));
+  thead.appendChild(hr);
+  table.appendChild(thead);
+  const tb = el("tbody");
+  rows.slice(0, 50).forEach(r => {
+    const tr = el("tr");
+    cols.forEach(c => {
+      let v = r[c];
+      if (v != null && typeof v === "object") v = JSON.stringify(v);
+      tr.appendChild(el("td", "", esc(v)));
+    });
+    tb.appendChild(tr);
+  });
+  table.appendChild(tb);
+  host.appendChild(table);
+}
+
+/* ================= CONNECTION / STATUS ================= */
+function setStatus(online) {
+  state.online = online;
+  const pill = $("#connPill");
+  const pulse = $("#connPulse");
+  const txt = $("#connText");
+  pill.classList.toggle("offline", !online);
+  pulse.classList.toggle("anim", online);
+  txt.textContent = online ? "SYSTEM ONLINE" : "SYSTEM OFFLINE";
+  $("#sysDot").className = "dot " + (online ? "online" : "offline");
+  $("#sysStatus").textContent = online ? "Operational" : "Offline";
+  const src = state.data || state.lastKnown;
+  $("#sysCheck").textContent = "Last API check: " + (src && (src.timestamp || state.cachedAt) ? fmtTime(src.timestamp || state.cachedAt) : "—") + (state.cachedAt ? " · cached snapshot" : "");
+}
+
+/* ================= API ================= */
+let lastFailToast = 0;
+async function fetchStatus() {
+  if (state.inFlight) return;
+  state.inFlight = true;
+  $("#refreshBtn").classList.add("spin");
+  $("#refreshBtn").disabled = true;
+  const body = new URLSearchParams({ __t: Date.now() });
+  try {
+    const res = await fetchWithTimeout(`${STATUS_URL}?${body}`, {
+      method: "GET",
+      headers: { "X-Dashboard-Key": API_KEY },
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const json = await res.json().catch(() => null) || {};
+    // sheet arrays may be nested under json.data
+    SHEET_NAMES.forEach(n => {
+      if (json[n] == null && json.sheets && json.sheets[n] != null) json[n] = json.sheets[n];
+      if (json[n] == null && json.data && json.data[n] != null) json[n] = json.data[n];
+      if (json[n] == null && json.data && json.data.sheets && json.data.sheets[n] != null) json[n] = json.data.sheets[n];
+    });
+    const prevTab = state.activeTab;
+    const prevScroll = $("#sheetTableWrap").scrollLeft;
+    if (json.timestamp == null && state.data) json.timestamp = state.data.timestamp;
+    state.data = json;
+    state.lastKnown = json;
+    state.cachedAt = null;
+    cache.save(json);
+    state.loading = false;
+    if (prevTab) state.activeTab = prevTab;
+    setStatus(true);
+    setPolling(POLL_MS);
+    renderAll();
+    $("#topLastCheck").textContent = "Updated " + fmtTime(json.timestamp || new Date().toISOString());
+    $("#sheetTableWrap").scrollLeft = prevScroll;
+    return json;
+  } catch (e) {
+    // retry once after a short delay
+    try {
+      await new Promise(r => setTimeout(r, 1500));
+      const res = await fetch(`${STATUS_URL}?${body}`, { method: "GET", headers: { "X-Dashboard-Key": API_KEY } });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const json = await res.json().catch(() => null) || {};
+      SHEET_NAMES.forEach(n => { if (json[n] == null && json.data && json.data[n] != null) json[n] = json.data[n]; });
+      if (json.timestamp == null && state.data) json.timestamp = state.data.timestamp;
+      state.data = json;
+      state.lastKnown = json;
+      state.cachedAt = null;
+      cache.save(json);
+      state.loading = false;
+      setStatus(true);
+      setPolling(POLL_MS);
+      renderAll();
+      $("#topLastCheck").textContent = "Updated " + fmtTime(json.timestamp || new Date().toISOString());
+      return json;
+    } catch (e2) {
+      // failed: preserve last good state
+      state.loading = false;
+      state.data = state.lastKnown; // keep rendering last known data
+      setStatus(false);
+      setPolling(RECOVERY_MS);
+      if (Date.now() - lastFailToast > 60000) { lastFailToast = Date.now(); toast("Status fetch failed — retrying", "error"); }
+      return null;
+    }
+  } finally {
+    state.inFlight = false;
+    $("#refreshBtn").classList.remove("spin");
+    $("#refreshBtn").disabled = false;
+    // after any attempt, keep rendering with whatever we have
+    if (state.lastKnown) { renderAll(); }
+  }
+}
+
+function renderAll() {
+  renderKpi();
+  renderViolations();
+  renderHealth();
+  renderAlerts();
+  renderRuns();
+  renderWorkflows();
+  renderTrello();
+  renderTabs();
+  renderSheet();
+}
+
+/* ================= ACTIONS ================= */
+let pendingAction = null;
+function runAction(action, btn) {
+  btn.classList.add("loading");
+  btn.disabled = true;
+  const body = { action };
+  return fetch(ACTION_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Dashboard-Key": API_KEY },
+    body: JSON.stringify(body),
+  })
+    .then(async res => {
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const txt = await res.text().catch(() => "");
+      toast(`Action "${action}" completed`, "success");
+      return txt;
+    })
+    .catch(e => { toast(`Action "${action}" failed`, "error"); throw e; })
+    .finally(() => {
+      btn.classList.remove("loading");
+      btn.disabled = false;
+    });
+}
+
+function initControls() {
+  $("#ctrlGrid").querySelectorAll(".ctrl-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const action = btn.dataset.action;
+      if (action === "run") {
+        // confirmation for the strongest destructive-ish action
+        $("#confirmTitle").textContent = "Run full audit?";
+        $("#confirmText").textContent = "This triggers a complete SOP compliance sweep against live data. Continue?";
+        $("#confirmBack").classList.add("open");
+        pendingAction = { action, btn };
+      } else {
+        btn.classList.add("loading"); btn.disabled = true;
+        runAction(action, btn).then(() => { refreshManual(); }).catch(() => {});
+      }
+    });
+  });
+  const close = () => { $("#confirmBack").classList.remove("open"); pendingAction = null; };
+  $("#confirmCancel").addEventListener("click", close);
+  $("#confirmBack").addEventListener("click", (e) => { if (e.target === $("#confirmBack")) close(); });
+  $("#confirmOk").addEventListener("click", () => {
+    const p = pendingAction; close();
+    if (p) {
+      p.btn.classList.add("loading"); p.btn.disabled = true;
+      runAction(p.action, p.btn).then(() => { refreshManual(); }).catch(() => {});
+    }
+  });
+}
+
+/* ================= REFRESH ================= */
+function refreshManual() {
+  if (!state.inFlight) fetchStatus();
+}
+let pollTimer = null;
+function setPolling(ms) {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(refreshManual, ms);
+}
+function startPolling() { setPolling(POLL_MS); }
+
+/* ================= INIT ================= */
+function init() {
+  // sidebar mobile
+  const sidebar = $("#sidebar");
+  const toggle = () => { sidebar.classList.toggle("open"); $("#mobileBackdrop").classList.toggle("open"); };
+  $("#menuToggle").addEventListener("click", toggle);
+  $("#mobileBackdrop").addEventListener("click", toggle);
+  sidebar.querySelectorAll(".nav-link").forEach(b => b.addEventListener("click", () => { sidebar.classList.remove("open"); $("#mobileBackdrop").classList.remove("open"); }));
+
+  $("#refreshBtn").addEventListener("click", refreshManual);
+  initControls();
+  const cached = cache.load();
+  if (cached) {
+    state.data = cached.data;
+    state.lastKnown = cached.data;
+    state.cachedAt = cached.savedAt || Date.now();
+    state.loading = false;
+    $("#topLastCheck").textContent = "Cached " + fmtTime(state.cachedAt);
+  }
+  setStatus(false);
+  renderAll(); // skeletons or cached data
+  fetchStatus();
+  startPolling();
+}
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
