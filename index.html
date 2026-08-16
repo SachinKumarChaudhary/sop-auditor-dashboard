@@ -834,8 +834,8 @@ const STATUS_URL = `${API_BASE}/dash-status`;
 const ACTION_URL = `${API_BASE}/dash-action`;
 const API_KEY = "sop-dash-2026";
 const POLL_MS = 30000;
-const RECOVERY_MS = 8000;
-const FETCH_TIMEOUT_MS = 25000;
+const RECOVERY_MS = 10000;
+const FETCH_TIMEOUT_MS = 60000;
 
 async function fetchWithTimeout(url, opts) {
   const ctrl = new AbortController();
@@ -1298,7 +1298,10 @@ async function fetchStatus() {
       state.data = state.lastKnown; // keep rendering last known data
       setStatus(false);
       setPolling(RECOVERY_MS);
-      if (Date.now() - lastFailToast > 60000) { lastFailToast = Date.now(); toast("Status fetch failed — retrying", "error"); }
+      if (Date.now() - lastFailToast > 60000) {
+        lastFailToast = Date.now();
+        toast(e2 && e2.name === "AbortError" ? "Backend waking up — retrying" : "Status fetch failed — retrying", "error");
+      }
       return null;
     }
   } finally {
