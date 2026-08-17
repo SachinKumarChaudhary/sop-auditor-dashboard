@@ -889,6 +889,11 @@ function esc(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
 }
 
+function num(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const fmtTime = (t) => {
   if (!t || t === "-") return "Unavailable";
@@ -1323,15 +1328,9 @@ async function fetchStatus() {
 }
 
 function renderAll() {
-  renderKpi();
-  renderViolations();
-  renderHealth();
-  renderAlerts();
-  renderRuns();
-  renderWorkflows();
-  renderTrello();
-  renderTabs();
-  renderSheet();
+  [renderKpi, renderViolations, renderHealth, renderAlerts, renderRuns, renderWorkflows, renderTrello, renderTabs, renderSheet].forEach(fn => {
+    try { fn(); } catch (e) { console.error("Render error in " + fn.name, e); }
+  });
 }
 
 /* ================= ACTIONS ================= */
