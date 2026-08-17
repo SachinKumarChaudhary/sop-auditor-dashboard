@@ -1226,6 +1226,7 @@ function setStatus(online) {
   pill.classList.toggle("offline", !online);
   pulse.classList.toggle("anim", online);
   txt.textContent = online ? "SYSTEM ONLINE" : "SYSTEM OFFLINE";
+  pill.title = online ? "" : (state.lastErr ? "Last error: " + state.lastErr : "");
   $("#sysDot").className = "dot " + (online ? "online" : "offline");
   $("#sysStatus").textContent = online ? "Operational" : "Offline";
   const src = state.data || state.lastKnown;
@@ -1307,7 +1308,8 @@ async function fetchStatus() {
       setPolling(RECOVERY_MS);
       if (Date.now() - lastFailToast > 60000) {
         lastFailToast = Date.now();
-        toast(e2 && e2.name === "AbortError" ? "Backend waking up — retrying" : "Status fetch failed — retrying", "error");
+        const why = state.lastErr || "unknown error";
+        toast((e2 && e2.name === "AbortError" ? "Backend waking up" : "Status fetch failed") + " — " + why, "error");
       }
       return null;
     }
