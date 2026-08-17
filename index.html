@@ -876,6 +876,7 @@ const state = {
   loading: true,
   lastKnown: null,   // last successful source of truth
   cachedAt: null,    // timestamp of the localStorage snapshot being shown
+  lastErr: null,     // last fetch failure detail, shown while offline
   sheetData: {},     // {sheetName: {rows}}
   sheetRows: {},
 };
@@ -1228,7 +1229,10 @@ function setStatus(online) {
   $("#sysDot").className = "dot " + (online ? "online" : "offline");
   $("#sysStatus").textContent = online ? "Operational" : "Offline";
   const src = state.data || state.lastKnown;
-  $("#sysCheck").textContent = "Last API check: " + (src && (src.timestamp || state.cachedAt) ? fmtTime(src.timestamp || state.cachedAt) : "—") + (state.cachedAt ? " · cached snapshot" : "");
+  const when = src && (src.timestamp || state.cachedAt) ? fmtTime(src.timestamp || state.cachedAt) : "—";
+  $("#sysCheck").textContent = online
+    ? "Last API check: " + when
+    : "Last API check: FAILED" + (state.lastErr ? " — " + state.lastErr : "") + (state.cachedAt ? " · showing snapshot from " + when : "");
 }
 
 /* ================= API ================= */
@@ -1259,6 +1263,7 @@ async function fetchStatus() {
     state.data = json;
     state.lastKnown = json;
     state.cachedAt = null;
+    state.lastErr = null;
     cache.save(json);
     state.loading = false;
     if (prevTab) state.activeTab = prevTab;
@@ -1285,6 +1290,7 @@ async function fetchStatus() {
       state.data = json;
       state.lastKnown = json;
       state.cachedAt = null;
+      state.lastErr = null;
       cache.save(json);
       state.loading = false;
       setStatus(true);
@@ -1296,6 +1302,7 @@ async function fetchStatus() {
       // failed: preserve last good state
       state.loading = false;
       state.data = state.lastKnown; // keep rendering last known data
+      state.lastErr = e2 ? (e2.name ? e2.name + " " : "") + (e2.message || "") : "unknown";
       setStatus(false);
       setPolling(RECOVERY_MS);
       if (Date.now() - lastFailToast > 60000) {
